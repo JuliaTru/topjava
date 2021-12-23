@@ -38,6 +38,7 @@ public class JdbcMealRepository implements MealRepository {
     }
 
     @Override
+    @Transactional
     public Meal save(Meal meal, int userId) {
         ValidationUtil.validate(meal);
 
