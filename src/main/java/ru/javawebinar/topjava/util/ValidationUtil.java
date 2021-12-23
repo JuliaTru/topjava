@@ -1,7 +1,12 @@
 package ru.javawebinar.topjava.util;
 
+import org.springframework.core.NestedExceptionUtils;
+import org.springframework.lang.NonNull;
 import ru.javawebinar.topjava.model.AbstractBaseEntity;
 import ru.javawebinar.topjava.util.exception.NotFoundException;
+
+import javax.validation.*;
+import java.util.Set;
 
 public class ValidationUtil {
     private ValidationUtil() {
@@ -39,6 +44,22 @@ public class ValidationUtil {
             entity.setId(id);
         } else if (entity.id() != id) {
             throw new IllegalArgumentException(entity + " must be with id=" + id);
+        }
+    }
+
+    //  https://stackoverflow.com/a/65442410/548473
+    @NonNull
+    public static Throwable getRootCause(@NonNull Throwable t) {
+        Throwable rootCause = NestedExceptionUtils.getRootCause(t);
+        return rootCause != null ? rootCause : t;
+    }
+    public static void validate (Object object) {
+        ValidatorFactory vf = Validation.buildDefaultValidatorFactory();
+        Validator validator = vf.getValidator();
+        Set<ConstraintViolation<Object>> constraintViolations = validator
+                .validate(object);
+        if (!constraintViolations.isEmpty()) {
+            throw new ConstraintViolationException(constraintViolations);
         }
     }
 }

@@ -1,5 +1,7 @@
 package ru.javawebinar.topjava.model;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.validator.constraints.Range;
 
 import javax.persistence.*;
@@ -11,28 +13,23 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @NamedQueries({
-        @NamedQuery(name = Meal.UPDATE, query = "UPDATE Meal m SET m.calories=:calories, m.dateTime=:dateTime, " +
-                "m.description=:description WHERE m.id=:id AND m.user.id=:userId"),
+        @NamedQuery(name = Meal.ALL_SORTED, query = "SELECT m FROM Meal m WHERE m.user.id=:userId ORDER BY m.dateTime DESC"),
         @NamedQuery(name = Meal.DELETE, query = "DELETE FROM Meal m WHERE m.id=:id AND m.user.id=:userId"),
-        @NamedQuery(name = Meal.GET, query = "SELECT m FROM Meal m WHERE m.id=:id AND m.user.id=:userId"),
-        @NamedQuery(name = Meal.ALL_SORTED, query = "SELECT m FROM Meal m WHERE m.user.id =: userId ORDER BY m.dateTime DESC"),
         @NamedQuery(name = Meal.GET_BETWEEN, query = """
-                    SELECT m FROM Meal m
+                    SELECT m FROM Meal m 
                     WHERE m.user.id=:userId AND m.dateTime >= :startDateTime AND m.dateTime < :endDateTime ORDER BY m.dateTime DESC
                 """),
+//        @NamedQuery(name = Meal.UPDATE, query = "UPDATE Meal m SET m.dateTime = :datetime, m.calories= :calories," +
+//                "m.description=:desc where m.id=:id and m.user.id=:userId")
 })
 
 @Entity
 @Table(name = "meals", uniqueConstraints = {@UniqueConstraint(columnNames = {"user_id", "date_time"}, name = "meals_unique_user_datetime_idx")})
 public class Meal extends AbstractBaseEntity {
 
+    public static final String ALL_SORTED = "Meal.getAll";
     public static final String DELETE = "Meal.delete";
-    public static final String UPDATE = "Meal.update";
-    public static final String GET = "Meal.get";
-    public static final String ALL_SORTED = "Meal.allSorted";
-    public static final String GET_ALL = "Meal.getAll";
     public static final String GET_BETWEEN = "Meal.getBetween";
-
 
     @Column(name = "date_time", nullable = false)
     @NotNull
@@ -49,6 +46,7 @@ public class Meal extends AbstractBaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @NotNull
     private User user;
 

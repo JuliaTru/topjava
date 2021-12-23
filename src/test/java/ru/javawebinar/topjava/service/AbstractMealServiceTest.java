@@ -1,40 +1,26 @@
 package ru.javawebinar.topjava.service;
 
-import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Stopwatch;
-import org.junit.runner.Description;
-import org.junit.runner.RunWith;
-import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.jdbc.Sql;
-import org.springframework.test.context.jdbc.SqlConfig;
-import org.springframework.test.context.junit4.SpringRunner;
-import ru.javawebinar.topjava.ActiveDbProfileResolver;
-import ru.javawebinar.topjava.Profiles;
 import ru.javawebinar.topjava.model.Meal;
 import ru.javawebinar.topjava.util.exception.NotFoundException;
 
+import javax.validation.ConstraintViolationException;
 import java.time.LocalDate;
 import java.time.Month;
-import java.util.concurrent.TimeUnit;
 
+import static java.time.LocalDateTime.of;
 import static org.junit.Assert.assertThrows;
-import static org.slf4j.LoggerFactory.getLogger;
 import static ru.javawebinar.topjava.MealTestData.*;
 import static ru.javawebinar.topjava.UserTestData.ADMIN_ID;
 import static ru.javawebinar.topjava.UserTestData.USER_ID;
 
-public class MealServiceTest extends ServiceTest{
+public abstract class AbstractMealServiceTest extends AbstractServiceTest {
 
     @Autowired
-    private MealService service;
-
+    protected MealService service;
 
     @Test
     public void delete() {
@@ -94,7 +80,8 @@ public class MealServiceTest extends ServiceTest{
 
     @Test
     public void updateNotOwn() {
-        assertThrows(NotFoundException.class, () -> service.update(meal1, ADMIN_ID));
+        NotFoundException exception = assertThrows(NotFoundException.class, () -> service.update(getUpdated(), ADMIN_ID));
+        Assert.assertEquals("Not found entity with id=" + MEAL1_ID, exception.getMessage());
         MEAL_MATCHER.assertMatch(service.get(MEAL1_ID, USER_ID), meal1);
     }
 
@@ -114,5 +101,15 @@ public class MealServiceTest extends ServiceTest{
     @Test
     public void getBetweenWithNullDates() {
         MEAL_MATCHER.assertMatch(service.getBetweenInclusive(null, null, USER_ID), meals);
+    }
+
+    @Test
+    public void createWithException() throws Exception {
+//        Assume.assumeTrue(!Arrays.asList(environment.getActiveProfiles()).contains(Profiles.JDBC));
+        assumeNotJdbc();
+        validateRootCause(ConstraintViolationException.class, () -> service.create(new Meal(null, of(2015, Month.JUNE, 1, 18, 0), "  ", 300), USER_ID));
+        validateRootCause(ConstraintViolationException.class, () -> service.create(new Meal(null, null, "Description", 300), USER_ID));
+        validateRootCause(ConstraintViolationException.class, () -> service.create(new Meal(null, of(2015, Month.JUNE, 1, 18, 0), "Description", 9), USER_ID));
+        validateRootCause(ConstraintViolationException.class, () -> service.create(new Meal(null, of(2015, Month.JUNE, 1, 18, 0), "Description", 5001), USER_ID));
     }
 }
