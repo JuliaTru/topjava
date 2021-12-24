@@ -52,14 +52,19 @@ public class AdminRestController extends AbstractUserController {
     }
 
     @Override
-    @GetMapping("/by")
+    @GetMapping("/by-email")
     public User getByMail(@RequestParam String email) {
         return super.getByMail(email);
     }
 
-    @Override
-    @GetMapping("/with-meals/{id}")
+    @GetMapping("/{id}/with-meals")
     public User getWithMeals(@PathVariable int id) {
-        return super.get(id);
+        return super.getWithMeals(id);
+    }
+
+    @GetMapping("/{id}/enable")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void enable(@PathVariable int id, @RequestParam boolean enable) {
+        super.enable(id, enable);
     }
 }

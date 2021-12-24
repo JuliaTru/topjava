@@ -72,10 +72,6 @@ public class User extends AbstractNamedEntity {
         this.roles = roles;
     }
 
-    public void setMeals(List<Meal> meals) {
-        this.meals = meals;
-    }
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")//, cascade = CascadeType.REMOVE, orphanRemoval = true)
     @OrderBy("dateTime DESC")
     @JsonManagedReference
@@ -152,6 +148,10 @@ public class User extends AbstractNamedEntity {
 
     public List<Meal> getMeals() {
         return meals;
+    }
+
+    public void setMeals(List<Meal> meals) {
+        this.meals = meals;
     }
 
     @Override

@@ -18,7 +18,7 @@ import java.util.List;
 @RequestMapping(value = MealRestController.REST_URL, produces = MediaType.APPLICATION_JSON_VALUE)
 public class MealRestController extends AbstractMealController {
 
-    static final String REST_URL = "/rest/meals";
+    static final String REST_URL = "/rest/profile/meals";
 
     @Override
     @GetMapping("/{id}")
@@ -56,10 +56,10 @@ public class MealRestController extends AbstractMealController {
     }
 
     @GetMapping("/filter")
-    public List<MealTo> getBetweenDateTime(
+    public List<MealTo> getBetween(
             @RequestParam @Nullable LocalDate startDate,
-            @RequestParam @Nullable LocalDate endDate,
             @RequestParam @Nullable LocalTime startTime,
+            @RequestParam @Nullable LocalDate endDate,
             @RequestParam @Nullable LocalTime endTime) {
         return super.getBetween(startDate, startTime, endDate, endTime);
     }

@@ -38,7 +38,7 @@ class AdminRestControllerTest extends AbstractControllerTest {
 
     @Test
     void getByEmail() throws Exception {
-        perform(MockMvcRequestBuilders.get(REST_URL + "by?email=" + user.getEmail()))
+        perform(MockMvcRequestBuilders.get(REST_URL + "by-email?email=" + user.getEmail()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(USER_MATCHER.contentJson(user));
@@ -87,12 +87,20 @@ class AdminRestControllerTest extends AbstractControllerTest {
     }
     @Test
     void getWithMeals() throws Exception {
-        User userWithMeals = new User(user);
-        userWithMeals.setMeals(meals);
-        perform(MockMvcRequestBuilders.get(REST_URL + "with-meals/" + USER_ID))
-                .andDo(print())
+        assumeDataJpa();
+        perform(MockMvcRequestBuilders.get(REST_URL + ADMIN_ID + "/with-meals"))
                 .andExpect(status().isOk())
+                .andDo(print())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(USER_MATCHER.contentJson(userWithMeals));
+                .andExpect(USER_WITH_MEALS_MATCHER.contentJson(admin));
+    }
+    @Test
+    void enable() throws Exception {
+        User updated = user;
+        updated.setEnabled(false);
+        perform(MockMvcRequestBuilders.get(REST_URL + USER_ID + "/enable?enable=false"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+       USER_MATCHER.assertMatch(userService.get(USER_ID), updated);
     }
 }

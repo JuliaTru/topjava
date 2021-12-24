@@ -4,9 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
@@ -18,9 +16,6 @@ import ru.javawebinar.topjava.repository.UserRepository;
 import ru.javawebinar.topjava.util.ValidationUtil;
 
 import java.util.*;
-
-import static java.util.Objects.nonNull;
-import static ru.javawebinar.topjava.util.ValidationUtil.validate;
 
 @Repository
 @Transactional(readOnly = true)
