@@ -2,7 +2,9 @@ package ru.javawebinar.topjava.util;
 
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.lang.NonNull;
+import org.springframework.validation.BindingResult;
 import ru.javawebinar.topjava.HasId;
+import ru.javawebinar.topjava.util.exception.IllegalRequestDataException;
 import ru.javawebinar.topjava.util.exception.NotFoundException;
 
 import javax.validation.*;
@@ -22,9 +24,9 @@ public class ValidationUtil {
     private ValidationUtil() {
     }
 
-    public static <T> void validate(T bean) {
+    public static <T> void validate(T bean, Class<?>... groups) {
         // https://alexkosarev.name/2018/07/30/bean-validation-api/
-        Set<ConstraintViolation<T>> violations = validator.validate(bean);
+        Set<ConstraintViolation<T>> violations = validator.validate(bean, groups);
         if (!violations.isEmpty()) {
             throw new ConstraintViolationException(violations);
         }
@@ -52,7 +54,7 @@ public class ValidationUtil {
 
     public static void checkNew(HasId bean) {
         if (!bean.isNew()) {
-            throw new IllegalArgumentException(bean + " must be new (id=null)");
+            throw new IllegalRequestDataException(bean + " must be new (id=null)");
         }
     }
 
@@ -61,7 +63,7 @@ public class ValidationUtil {
         if (bean.isNew()) {
             bean.setId(id);
         } else if (bean.id() != id) {
-            throw new IllegalArgumentException(bean + " must be with id=" + id);
+            throw new IllegalRequestDataException(bean + " must be with id=" + id);
         }
     }
 
@@ -70,5 +72,10 @@ public class ValidationUtil {
     public static Throwable getRootCause(@NonNull Throwable t) {
         Throwable rootCause = NestedExceptionUtils.getRootCause(t);
         return rootCause != null ? rootCause : t;
+    }
+    public static String getErrorResponse(BindingResult result) {
+        StringBuilder stringBuilder = new StringBuilder();
+        result.getFieldErrors().forEach(fe -> stringBuilder.append(String.format("[%s] %s", fe.getField(), fe.getDefaultMessage())).append("<br>"));
+        return stringBuilder.toString();
     }
 }

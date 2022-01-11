@@ -1,17 +1,21 @@
 package ru.javawebinar.topjava.web.meal;
 
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import ru.javawebinar.topjava.model.Meal;
 import ru.javawebinar.topjava.service.MealService;
 import ru.javawebinar.topjava.util.exception.NotFoundException;
 import ru.javawebinar.topjava.web.AbstractControllerTest;
 import ru.javawebinar.topjava.web.json.JsonUtil;
 
+import java.time.Month;
+
+import static java.time.LocalDateTime.of;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -41,11 +45,32 @@ class MealRestControllerTest extends AbstractControllerTest {
     }
 
     @Test
+    void getUnauth() throws Exception {
+        perform(MockMvcRequestBuilders.get(REST_URL + MEAL1_ID))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getNotFound() throws Exception {
+        perform(MockMvcRequestBuilders.get(REST_URL + ADMIN_MEAL_ID)
+                .with(userHttpBasic(user)))
+                .andDo(print())
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
     void delete() throws Exception {
         perform(MockMvcRequestBuilders.delete(REST_URL + MEAL1_ID)
                 .with(userHttpBasic(user)))
                 .andExpect(status().isNoContent());
         assertThrows(NotFoundException.class, () -> mealService.get(MEAL1_ID, USER_ID));
+    }
+
+    @Test
+    void deleteNotFound() throws Exception {
+        perform(MockMvcRequestBuilders.delete(REST_URL + ADMIN_MEAL_ID)
+                .with(userHttpBasic(user)))
+                .andExpect(status().isUnprocessableEntity());
     }
 
     @Test
@@ -60,11 +85,37 @@ class MealRestControllerTest extends AbstractControllerTest {
     }
 
     @Test
+    void updateWithInvalidation() throws Exception {
+        for (Meal meal : getInvalidMeals()) {
+            meal.setId(MEAL1_ID);
+            perform(MockMvcRequestBuilders.put(REST_URL + MEAL1_ID).contentType(MediaType.APPLICATION_JSON)
+                    .with(userHttpBasic(user))
+                    .content(JsonUtil.writeValue(meal)))
+                    .andDo(print())
+                    .andExpect(status().isUnprocessableEntity());
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NEVER)
+    void updateWithDoubleDateTime() throws Exception {
+        Meal newMeal = getNew();
+        newMeal.setDateTime(of(2020, Month.JANUARY, 30, 13, 0));
+        newMeal.setId(MEAL1_ID);
+        perform(MockMvcRequestBuilders.put(REST_URL + MEAL1_ID).contentType(MediaType.APPLICATION_JSON)
+                .with(userHttpBasic(user))
+                .content(JsonUtil.writeValue(newMeal)))
+                .andDo(print())
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void createWithLocation() throws Exception {
         Meal newMeal = getNew();
         ResultActions action = perform(MockMvcRequestBuilders.post(REST_URL)
                 .with(userHttpBasic(user))
                 .contentType(MediaType.APPLICATION_JSON)
+                .with(userHttpBasic(user))
                 .content(JsonUtil.writeValue(newMeal)));
 
         Meal created = MEAL_MATCHER.readFromJson(action);
@@ -72,6 +123,31 @@ class MealRestControllerTest extends AbstractControllerTest {
         newMeal.setId(newId);
         MEAL_MATCHER.assertMatch(created, newMeal);
         MEAL_MATCHER.assertMatch(mealService.get(newId, USER_ID), newMeal);
+    }
+
+    @Test
+    void createWithInvalidation() throws Exception {
+        for (Meal meal : getInvalidMeals()) {
+            perform(MockMvcRequestBuilders.post(REST_URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .with(userHttpBasic(user))
+                    .content(JsonUtil.writeValue(meal)))
+                    .andDo(print())
+                    .andExpect(status().isUnprocessableEntity());
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NEVER)
+    void createWithDoubleDateTime() throws Exception {
+        Meal newMeal = getNew();
+        newMeal.setDateTime(of(2020, Month.JANUARY, 30, 13, 0));
+        perform(MockMvcRequestBuilders.post(REST_URL)
+                .contentType(MediaType.APPLICATION_JSON)
+                .with(userHttpBasic(user))
+                .content(JsonUtil.writeValue(newMeal)))
+                .andDo(print())
+                .andExpect(status().isConflict());
     }
 
     @Test
@@ -89,7 +165,8 @@ class MealRestControllerTest extends AbstractControllerTest {
         perform(MockMvcRequestBuilders.get(REST_URL + "filter")
                 .with(userHttpBasic(user))
                 .param("startDate", "2020-01-30").param("startTime", "07:00")
-                .param("endDate", "2020-01-31").param("endTime", "11:00"))
+                .param("endDate", "2020-01-31").param("endTime", "11:00")
+                .with(userHttpBasic(user)))
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andExpect(TO_MATCHER.contentJson(createTo(meal5, true), createTo(meal1, false)));
