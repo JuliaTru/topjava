@@ -3,11 +3,6 @@ let form;
 function makeEditable(datatableApi) {
     ctx.datatableApi = datatableApi;
     form = $('#detailsForm');
-    $(".delete").click(function () {
-        if (confirm('Are you sure?')) {
-            deleteRow($(this).closest('tr').attr("id"));
-        }
-    });
 
     $(document).ajaxError(function (event, jqXHR, options, jsExc) {
         failNoty(jqXHR);
@@ -18,26 +13,45 @@ function makeEditable(datatableApi) {
 }
 
 function add() {
+    $("#modalTitle").html(i18n["addTitle"]);
     form.find(":input").val("");
     $("#editRow").modal();
 }
 
-function deleteRow(id) {
-    $.ajax({
-        url: ctx.ajaxUrl + id,
-        type: "DELETE"
-    }).done(function () {
-        updateTable();
-        mealFilter();
-        successNoty("Deleted");
+function updateRow(id) {
+    form.find(":input").val("");
+    $("#modalTitle").html(i18n["editTitle"]);
+    $.get(ctx.ajaxUrl + id, function (data) {
+    $.each(data, function (key, value) {
+            if (key === 'dateTime') {
+                let retDate;
+                retDate = value.replace("T", " ")
+                form.find("input[name='" + key + "']").val(retDate.substring(0, 16));
+            } else {
+                form.find("input[name='" + key + "']").val(value);
+            }
+
+        });
+    $('#editRow').modal();
     });
 }
 
-function updateTable() {
-    $.get(ctx.ajaxUrl, function (data) {
-        ctx.datatableApi.clear().rows.add(data).draw();
-    });
+function deleteRow(id) {
+    if (confirm(i18n['common.confirm'])) {
+        $.ajax({
+            url: ctx.ajaxUrl + id,
+            type: "DELETE"
+        }).done(function () {
+            ctx.updateTable();
+            successNoty("common.deleted");
+        });
+    }
 }
+
+function updateTable() {
+        ctx.datatableApi.clear().rows.add(data).draw();
+    }
+
 
 function save() {
     $.ajax({
@@ -46,9 +60,8 @@ function save() {
         data: form.serialize()
     }).done(function () {
         $("#editRow").modal("hide");
-        updateTable();
-        mealFilter();
-        successNoty("Saved");
+        ctx.updateTable();
+        successNoty("common.saved");
     });
 }
 
@@ -71,12 +84,44 @@ function successNoty(text) {
     }).show();
 }
 
+function renderEditBtn(data, type, row) {
+    if (type === "display") {
+        return "<a onclick='updateRow(" + row.id + ");'><span class='fa fa-pencil'></span></a>";
+    }
+}
+
+function renderDeleteBtn(data, type, row) {
+    if (type === "display") {
+        return "<a onclick='deleteRow(" + row.id + ");'><span class='fa fa-remove'></span></a>";
+    }
+}
+
 function failNoty(jqXHR) {
     closeNoty();
     failedNote = new Noty({
-        text: "<span class='fa fa-lg fa-exclamation-circle'></span> &nbsp;Error status: " + jqXHR.status,
+        text: "<span class='fa fa-lg fa-exclamation-circle'></span> &nbsp;Error status: " + jqXHR.status + (jqXHR.responseJSON ? "<br>" + jqXHR.responseJSON : ""),
         type: "error",
         layout: "bottomRight"
     });
     failedNote.show()
 }
+
+    $('#startDate').datetimepicker({
+        timepicker: false,
+        format:'Y-m-d'
+    });
+    $('#endDate').datetimepicker({
+        timepicker: false,
+        format:'Y-m-d'
+    });
+    $('#startTime').datetimepicker({
+        datepicker: false,
+        format:'H:00'
+    });
+    $('#endTime').datetimepicker({
+        datepicker: false,
+        format:'H:00'
+    });
+    $('#dateTime').datetimepicker({
+        format:'Y-m-d H:i'
+    });
